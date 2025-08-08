@@ -1,0 +1,1281 @@
+<!DOCTYPE html>
+<html lang="bn">
+  <head>
+    <script>
+      document.addEventListener("contextmenu", (event) =>
+        event.preventDefault()
+      );
+      document.addEventListener("keydown", (event) => {
+        if (
+          (event.ctrlKey &&
+            ["u", "s", "i", "j"].includes(event.key.toLowerCase())) ||
+          event.key === "F12"
+        ) {
+          event.preventDefault();
+        }
+      });
+    </script>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Online Exam</title>
+    <!-- Chart.js CDN -->
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap");
+
+      body {
+        font-family: "Hind Siliguri", sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f4;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+
+      .container {
+        font-family: "Hind Siliguri", sans-serif;
+        width: 100%;
+        margin: auto;
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        min-height: 80vh;
+      }
+
+      .exam-content {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      h1 {
+        color: #1b0b54;
+        text-align: center;
+        margin-bottom: 10px;
+      }
+
+      #timer {
+        font-size: 20px;
+        color: #1b0b54;
+        margin-bottom: 5px;
+        font-weight: normal;
+        text-align: center;
+      }
+
+      #exam-info {
+        font-size: 16px;
+        color: black;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+
+      #exam {
+        width: 100%;
+        min-height: 100px;
+      }
+
+      .chart-container {
+        width: 200px;
+        height: 200px;
+        margin: 10px auto;
+        background-color: #f9f9f9;
+        border-radius: 15px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        display: none;
+        padding: 10px;
+      }
+
+      .chart-container.visible {
+        display: block;
+      }
+
+      .question-container {
+        text-align: left;
+        margin-bottom: 20px;
+        display: block;
+      }
+
+      .question-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+      }
+
+      .options {
+        margin-top: 10px;
+      }
+
+      .option {
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 5px;
+        text-transform: uppercase;
+      }
+
+      .circle {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 2px solid #1b0b54;
+        margin-right: 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #1b0b54;
+        font-weight: bold;
+        font-size: 18px;
+      }
+
+      .selected .circle {
+        background-color: #1b0b54;
+        color: white;
+      }
+
+      .correct-text {
+        color: green !important;
+      }
+
+      .incorrect-text {
+        color: #ff0800 !important;
+      }
+
+      .unattempted-text {
+        color: orange !important;
+      }
+
+      #submitBtn {
+        font-family: hind siliguri;
+        padding: 15px 30px;
+        background-color: #1b0b54;
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-size: 18px;
+        font-weight: bold;
+        border-radius: 10px;
+        margin-top: 20px;
+        width: 200px;
+        transition: background-color 0.3s ease;
+      }
+
+      #submitBtn:hover {
+        background-color: #1b0b54;
+      }
+
+      .popup {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: white;
+        padding: 20px;
+        width: 300px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+        text-align: center;
+        display: none;
+        z-index: 1000;
+        transition: transform 0.5s ease, opacity 0.5s ease;
+      }
+
+      .popup.slide-out {
+        transform: translate(-50%, -100%);
+        opacity: 0;
+      }
+
+      .popup-header {
+        background-color: #1b0b54;
+        color: white;
+        padding: 10px;
+        font-size: 20px;
+        font-weight: bold;
+        border-radius: 10px 10px 0 0;
+      }
+
+      .popup-body {
+        padding: 15px;
+      }
+
+      .popup-body p {
+        margin: 10px 0;
+      }
+
+      .confirm-btn {
+        font-family: hind siliguri;
+        background-color: #34c759;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .confirm-btn:hover {
+        background-color: #34c759;
+      }
+
+      .cancel-btn {
+        background-color: #ff3b30;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .cancel-btn:hover {
+        background-color: #e02b21;
+      }
+
+      .explanation-dropdown {
+        display: none;
+        margin-top: 10px;
+      }
+
+      .explanation-dropdown.visible {
+        display: block;
+      }
+
+      .explanation-btn {
+        background-color: #1b0b54;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        font-family: "Hind Siliguri", sans-serif;
+        width: 40%;
+        text-align: left;
+        position: relative;
+      }
+
+      .explanation-btn:hover {
+        background-color: #1b0b54;
+      }
+
+      .explanation-btn::after {
+        content: "▼";
+        position: absolute;
+        right: 10px;
+        font-size: 12px;
+      }
+
+      .explanation-btn.active::after {
+        content: "▲";
+      }
+
+      .explanation-content {
+        display: none;
+        padding: 15px;
+        background-color: #f9f9f9;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 14px;
+        color: #000000;
+        text-align: left;
+        max-height: 450px;
+        overflow-y: auto;
+        margin-top: 5px;
+      }
+
+      .explanation-content.visible {
+        display: block;
+      }
+
+      .explanation-content p {
+        margin: 0 0 10px 0;
+      }
+
+      .explanation-content ul {
+        margin: 0;
+        padding-left: 20px;
+      }
+
+      .explanation-content li {
+        margin-bottom: 5px;
+      }
+
+      .explanation-content strong {
+        color: #1b0b54;
+      }
+
+      .explanation-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+        display: block;
+      }
+
+      .locked .option {
+        pointer-events: none;
+        cursor: default;
+      }
+
+      .locked .option.selected {
+        pointer-events: none;
+        cursor: default;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container" id="examContainer">
+      <div class="exam-content">
+        <h1>যুলোজি অনুশীলন</h1>
+        <div id="timer"></div>
+        <div id="exam-info"></div>
+        <div class="chart-container">
+          <canvas id="scoreChart"></canvas>
+        </div>
+        <div id="exam">
+          <!-- Questions will be generated dynamically -->
+        </div>
+        <button id="submitBtn">সাবমিট</button>
+      </div>
+    </div>
+
+    <div class="popup" id="scorePopup">
+      <div class="popup-header">তোমার স্কোর</div>
+      <div class="popup-body">
+        <p><strong>মোট প্রশ্ন:</strong> <span id="totalQuestions"></span></p>
+        <p>
+          <strong>উত্তর দিয়েছো:</strong>
+          <span style="color: #000000" id="answered"></span>
+        </p>
+        <p>
+          <strong>সঠিক উত্তর:</strong>
+          <span style="color: #0ab853" id="correctAnswers"></span>
+        </p>
+        <p>
+          <strong>ভুল উত্তর:</strong>
+          <span style="color: #f81010" id="wrongAnswers"></span>
+        </p>
+        <p>
+          <strong>অনুত্তরিত:</strong>
+          <span style="color: #ffc801" id="unanswered"></span>
+        </p>
+        <p><strong>তোমার চূড়ান্ত স্কোর:</strong></p>
+        <h2 style="color: #1b0b54"><span id="finalScore"></span></h2>
+        <form id="scoreForm" action="https://formspree.io/f/xpby" method="POST">
+          <input type="hidden" name="userID" id="formUserID" />
+          <input type="hidden" name="finalScore" id="formFinalScore" />
+          <input type="hidden" name="correctAnswers" id="formCorrectAnswers" />
+          <input type="hidden" name="wrongAnswers" id="formWrongAnswers" />
+          <input type="hidden" name="unanswered" id="formUnanswered" />
+          <button
+            type="submit"
+            class="confirm-btn"
+            style="background-color: #1b0b54"
+          >
+            <b>ওকে</b>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="popup" id="confirmPopup">
+      <div class="popup-header">কনফার্ম করো</div>
+      <div class="popup-body">
+        <p>
+          ভালো করে দেখে নাও! <br />
+          পরীক্ষা শেষ করতে চাও তো?
+        </p>
+        <button class="confirm-btn" onclick="confirmSubmit()">
+          <b>হ্যাঁ</b>
+        </button>
+        <button class="cancel-btn" onclick="cancelSubmit()"><b>না</b></button>
+      </div>
+    </div>
+
+    <script>
+      let chartInstance = null;
+
+      document.addEventListener("DOMContentLoaded", function () {
+        console.log("DOM fully loaded and parsed");
+        const examContainer = document.getElementById("examContainer");
+        if (!examContainer) {
+          console.error("Exam container not found!");
+          return;
+        }
+        try {
+          sessionStorage.setItem("isLoggedIn", "true");
+          sessionStorage.setItem("userID", "anonymous");
+          console.log(
+            "Session storage set: isLoggedIn = true, userID = anonymous"
+          );
+        } catch (e) {
+          console.error("Session storage error:", e);
+        }
+        examContainer.style.display = "block";
+        console.log("Exam container displayed");
+        startTimer();
+        generateQuestions();
+
+        window.addEventListener("beforeunload", function (event) {
+          if (
+            examContainer.style.display === "block" &&
+            sessionStorage.getItem("isLoggedIn") === "true"
+          ) {
+            autoSubmitScore();
+          }
+        });
+      });
+
+      const questions = [
+        {
+          id: 1,
+          question: "মস্তিষ্কের সবচেয়ে বড় অংশ কোনটি?",
+          options: {
+            a: "থ্যালামাস",
+            b: "সেরিব্রাম",
+            c: "হাইপোথ্যালামাস",
+            d: "সেরিবেলাম",
+          },
+          correct: "b",
+          explanation:
+            "<p>মানব মস্তিষ্কের সবচেয়ে বড় এবং প্রধান অংশ হলো <strong>সেরিব্রাম (Cerebrum)</strong>। এটি মস্তিষ্কের মোট ওজনের প্রায় ৮৫% দখল করে এবং চিন্তা, স্মৃতি, বুদ্ধি, ঐচ্ছিক নড়াচড়া, সংবেদনশীলতা ইত্যাদি উচ্চতর কার্যকারিতা নিয়ন্ত্রণ করে। থ্যালামাস, হাইপোথ্যালামাস এবং সেরিবেলাম মস্তিষ্কের অন্যান্য গুরুত্বপূর্ণ অংশ হলেও সেরিব্রামই আকারে সবচেয়ে বড়।</p>",
+        },
+        {
+          id: 2,
+          question: "কোনটি সেরেব্রামের কাজ নয়?",
+          options: {
+            a: "বুদ্ধিবৃত্তি",
+            b: "ইচ্ছাশক্তি",
+            c: "স্মৃতিশক্তি",
+            d: "শ্বাসপ্রশ্বাসের হার",
+          },
+          correct: "d",
+          explanation:
+            "<p>সেরিব্রাম (Cerebrum) মানব মস্তিষ্কের সবচেয়ে বড় অংশ এবং এটি উচ্চতর মানসিক কার্যকারিতা যেমন <strong>বুদ্ধিবৃত্তি, ইচ্ছাশক্তি এবং স্মৃতিশক্তি</strong> নিয়ন্ত্রণ করে। তবে <strong>শ্বাসপ্রশ্বাসের হার</strong> নিয়ন্ত্রণ সেরিব্রামের কাজ নয়। শ্বাসপ্রশ্বাসের হার, হৃদস্পন্দন এবং অন্যান্য অনৈচ্ছিক শারীরিক কার্যকলাপ মূলত মস্তিষ্কের মেডুলা অবলংগাটা (Medulla oblongata) এবং পনস (Pons) দ্বারা নিয়ন্ত্রিত হয়।</p>",
+        },
+        {
+          id: 3,
+          question: "নিচের কোনটি মেনিনজেসের অংশ নয়?",
+          options: {
+            a: "ড্যুরা ম্যাটার",
+            b: "অ্যারাকনয়েড ম্যাটার",
+            c: "পায়া ম্যাটার",
+            d: "হোয়াইট ম্যাটার",
+          },
+          correct: "d",
+          explanation:
+            "<p>মেনিনজেস (Meninges) হলো তিনটি ঝিল্লির একটি সেট যা মস্তিষ্ক এবং সুষুম্নাকাণ্ডকে আবৃত করে সুরক্ষা প্রদান করে। এই তিনটি স্তর হলো: <strong>ড্যুরা ম্যাটার (Dura mater)</strong>, <strong>অ্যারাকনয়েড ম্যাটার (Arachnoid mater)</strong> এবং <strong>পায়া ম্যাটার (Pia mater)</strong>। <strong>হোয়াইট ম্যাটার (White matter)</strong> হলো কেন্দ্রীয় স্নায়ুতন্ত্রের একটি অংশ যা মূলত মায়োলিনযুক্ত অ্যাক্সন (myelinated axons) নিয়ে গঠিত এবং এটি মেনিনজেসের অংশ নয় বরং মস্তিষ্কের ভেতরের টিস্যু।</p>",
+        },
+        {
+          id: 4,
+          question: "সেরেব্রামের দুটি খণ্ডকে সংযোগকারী স্নায়ু গুচ্ছের নাম?",
+          options: {
+            a: "কর্পাস অ্যালবিকান্স",
+            b: "কর্পাস অ্যাটরেটিকাম",
+            c: "কর্পাস ক্যালোসাম",
+            d: "কর্পাস লুটিয়াম",
+          },
+          correct: "c",
+          explanation:
+            "<p>সেরেব্রামের (Cerebrum) দুটি গোলার্ধ, ডান এবং বাম সেরেব্রাল হেমিস্ফিয়ার, একটি বৃহৎ এবং ঘন স্নায়ু গুচ্ছ দ্বারা সংযুক্ত থাকে। এই স্নায়ু গুচ্ছের নাম হলো <strong>কর্পাস ক্যালোসাম (Corpus callosum)</strong>। এটি দুটি গোলার্ধের মধ্যে তথ্য আদান-প্রদানে সাহায্য করে, যা মস্তিষ্কের সমন্বিত কার্যকারিতার জন্য অপরিহার্য।</p>",
+        },
+        {
+          id: 5,
+          question: "শ্বসন কেন্দ্র অবস্থিত কোথায়?",
+          options: {
+            a: "পনস",
+            b: "মধ্যমস্তিষ্ক",
+            c: "সেরিবেলাম",
+            d: "স্নায়ুরজ্জু",
+          },
+          correct: "a",
+          explanation:
+            "<p>শ্বসন কেন্দ্র (Respiratory center) মস্তিষ্কের দুটি প্রধান অংশে অবস্থিত: মেডুলা অবলংগাটা (Medulla oblongata) এবং <strong>পনস (Pons)</strong>। পনসে অবস্থিত নিউমোট্যাক্সিক কেন্দ্র (Pneumotaxic center) এবং অ্যাপনিউস্টিক কেন্দ্র (Apneustic center) শ্বাস-প্রশ্বাসের হার এবং গভীরতা নিয়ন্ত্রণ করে। যদিও মেডুলাও প্রধান শ্বাসকেন্দ্র, পনস এর সমন্বয়ে কাজ করে।</p>",
+        },
+        {
+          id: 6,
+          question: "মস্তিষ্কের কোন অংশে ক্ষুধা নিয়ন্ত্রণ কেন্দ্র অবস্থিত?",
+          options: {
+            a: "সেরিব্রাম",
+            b: "থ্যালামাস",
+            c: "হাইপোথ্যালামাস",
+            d: "সেরিবেলাম",
+          },
+          correct: "c",
+          explanation:
+            "<p>মস্তিষ্কের <strong>হাইপোথ্যালামাস (Hypothalamus)</strong> হলো একটি ছোট কিন্তু অত্যন্ত গুরুত্বপূর্ণ অংশ যা দেহের অনেক মৌলিক কার্যকারিতা নিয়ন্ত্রণ করে। এর মধ্যে <strong>ক্ষুধা, তৃষ্ণা, দেহতাপ নিয়ন্ত্রণ, ঘুম</strong> এবং হরমোন নিঃসরণ অন্যতম। হাইপোথ্যালামাসে ক্ষুধা এবং তৃষ্ণা নিয়ন্ত্রণ কেন্দ্র অবস্থিত।</p>",
+        },
+        {
+          id: 7,
+          question: "ডায়েনসেফালনের মধ্যস্থ গহ্বরটিকে কী বলে?",
+          options: {
+            a: "প্রথম ভেন্ট্রিকল",
+            b: "দ্বিতীয় ভেন্ট্রিকল",
+            c: "তৃতীয় ভেন্ট্রিকল",
+            d: "চতুর্থ ভেন্ট্রিকল",
+          },
+          correct: "c",
+          explanation:
+            "<p>ডায়েনসেফালন (Diencephalon) হলো মস্তিষ্কের একটি অংশ যা থ্যালামাস এবং হাইপোথ্যালামাস নিয়ে গঠিত। এই অংশের মধ্যস্থ গহ্বরটিকে <strong>তৃতীয় ভেন্ট্রিকল (Third ventricle)</strong> বলা হয়। মস্তিষ্কের ভেন্ট্রিকলগুলো হলো তরল-পূর্ণ স্থান যা সেরিব্রোস্পাইনাল ফ্লুইড (Cerebrospinal fluid) উৎপাদন ও সঞ্চালনে সাহায্য করে।</p>",
+        },
+        {
+          id: 8,
+          question: "সেরিবেলাম এর কাজ কোনটি?",
+          options: {
+            a: "ঘুমন্ত মানুষকে হঠাৎ জাগানো",
+            b: "দেহতাপ নিয়ন্ত্রণ",
+            c: "দেহের ভারসাম্য বজায় রাখা",
+            d: "স্বাভাবিক শ্বাসক্রিয়ার হার নিয়ন্ত্রণ",
+          },
+          correct: "c",
+          explanation:
+            "<p>সেরিবেলাম (Cerebellum) হলো মস্তিষ্কের দ্বিতীয় বৃহত্তম অংশ এবং এর প্রধান কাজ হলো <strong>দেহের ভারসাম্য বজায় রাখা</strong> এবং ঐচ্ছিক নড়াচড়ার সমন্বয় সাধন করা। এটি পেশী আন্দোলনকে মসৃণ ও সুনির্দিষ্ট করতে সাহায্য করে এবং অঙ্গভঙ্গি নিয়ন্ত্রণ করে। ঘুমন্ত মানুষকে জাগানো, দেহতাপ নিয়ন্ত্রণ এবং শ্বাসক্রিয়ার হার নিয়ন্ত্রণ অন্যান্য মস্তিষ্কের অংশ দ্বারা সম্পন্ন হয়।</p>",
+        },
+        {
+          id: 9,
+          question: "মস্তিষ্ক সম্পর্কে নিম্নের কোন তথ্যটি সঠিক?",
+          options: {
+            a: "হৃদস্পন্দন নিয়ন্ত্রণ কেন্দ্র সেরিবেলাম থাকে",
+            b: "পরিপাক নিয়ন্ত্রণ কেন্দ্র মেডুলা অবলংগাটায় থাকে",
+            c: "স্মৃতিশক্তি নিয়ন্ত্রণ কেন্দ্র হাইপোথ্যালামাসে থাকে",
+            d: "চলনে সমন্বয় সাধন করে থ্যালামাস",
+          },
+          correct: "b",
+          explanation:
+            "<p>মস্তিষ্ক সম্পর্কে সঠিক তথ্যটি হলো: <strong>পরিপাক নিয়ন্ত্রণ কেন্দ্র মেডুলা অবলংগাটায় (Medulla oblongata) থাকে</strong>। মেডুলা অবলংগাটা মস্তিষ্কের একটি গুরুত্বপূর্ণ অংশ যা শ্বাস-প্রশ্বাস, হৃদস্পন্দন, রক্তচাপ এবং পরিপাক সহ বিভিন্ন অনৈচ্ছিক ক্রিয়াকলাপ নিয়ন্ত্রণ করে। হৃদস্পন্দন নিয়ন্ত্রণ কেন্দ্রও মেডুলাতে থাকে, স্মৃতিশক্তি নিয়ন্ত্রণ কেন্দ্র সেরিব্রাম (বিশেষ করে হিপোক্যাম্পাস) এবং চলনে সমন্বয় সাধন করে সেরিবেলাম।</p>",
+        },
+        {
+          id: 10,
+          question: "মস্তিষ্কের বিকাশের জন্য কোনটি একান্ত প্রয়োজন?",
+          options: {
+            a: "গ্লুকোজ",
+            b: "মল্টোজ",
+            c: "গ্যালাকটোজ",
+            d: "ল্যাকটোজ",
+          },
+          correct: "c",
+          explanation:
+            "<p>মস্তিষ্কের সঠিক বিকাশের জন্য <strong>গ্যালাকটোজ (Galactose)</strong> একান্ত প্রয়োজন। গ্যালাকটোজ ল্যাকটোজের একটি উপাদান এবং এটি সেরিব্রোসাইড (Cerebrosides) নামক গুরুত্বপূর্ণ মস্তিষ্কের লিপিড তৈরিতে ব্যবহৃত হয়। এই লিপিডগুলো মস্তিষ্কের কোষের গঠন এবং কার্যকারিতার জন্য অপরিহার্য। যদিও মস্তিষ্কের প্রধান শক্তির উৎস গ্লুকোজ, গ্যালাকটোজ এর গঠনগত উপাদান হিসেবে গুরুত্বপূর্ণ।</p>",
+        },
+        {
+          id: 11,
+          question: "মলমূত্র ত্যাগ নিয়ন্ত্রণ করে মস্তিষ্কের নিম্নের কোন অংশ?",
+          options: {
+            a: "মেডুলা অবলংগাটা",
+            b: "পনস",
+            c: "থ্যালামাস",
+            d: "সেরেবেলাম",
+          },
+          correct: "a",
+          explanation:
+            "<p>মলমূত্র ত্যাগ (Defecation and urination) নিয়ন্ত্রণ করে মস্তিষ্কের <strong>মেডুলা অবলংগাটা (Medulla oblongata)</strong>। যদিও এই প্রক্রিয়াগুলো সুষুম্নাকাণ্ডের প্রতিফলন ক্রিয়া দ্বারা শুরু হয়, মেডুলা এই অনৈচ্ছিক প্রক্রিয়াগুলোর সমন্বয় সাধন এবং নিয়ন্ত্রণ করে। এর পাশাপাশি শ্বাস-প্রশ্বাস, হৃদস্পন্দন এবং রক্তচাপের মতো মৌলিক জৈবিক কার্যকারিতাও মেডুলা দ্বারা নিয়ন্ত্রিত হয়।</p>",
+        },
+        {
+          id: 12,
+          question: "মানুষের সেরেব্রাল অ্যাকুইডাক্ট কত মি.মি. লম্বা?",
+          options: {
+            a: "২০",
+            b: "১০",
+            c: "২৫",
+            d: "১৫",
+          },
+          correct: "d",
+          explanation:
+            "<p>মানুষের <strong>সেরেব্রাল অ্যাকুইডাক্ট (Cerebral aqueduct)</strong>, যা সিলভিয়াসের অ্যাকুইডাক্ট (Aqueduct of Sylvius) নামেও পরিচিত, হলো মস্তিষ্কের মধ্যমস্তিষ্কে অবস্থিত একটি সরু নালী যা তৃতীয় এবং চতুর্থ ভেন্ট্রিকলের মধ্যে সেরিব্রোস্পাইনাল ফ্লুইড (CSF) পরিবহন করে। এই নালীটি সাধারণত প্রায় <strong>১৫ মি.মি.</strong> লম্বা হয়।</p>",
+        },
+        {
+          id: 13,
+          question: "নিম্নের কোনটি হাইপোথ্যালামাসের কাজ?",
+          options: {
+            a: "অম্ল ও ক্ষারের সাম্যতা রক্ষা করা",
+            b: "ঐচ্ছিক চলাফেরা নিয়ন্ত্রণ করা",
+            c: "দেহের ভারসাম্য রক্ষা করা",
+            d: "দেহতাপ নিয়ন্ত্রণ করা",
+          },
+          correct: "d",
+          explanation:
+            "<p>হাইপোথ্যালামাস (Hypothalamus) হলো মস্তিষ্কের একটি ছোট কিন্তু অত্যন্ত গুরুত্বপূর্ণ অংশ যা দেহের অভ্যন্তরীণ পরিবেশের সাম্যবস্থা (হোমিওস্ট্যাসিস) বজায় রাখতে সাহায্য করে। এর অন্যতম প্রধান কাজ হলো <strong>দেহতাপ নিয়ন্ত্রণ করা</strong>। এছাড়াও এটি ক্ষুধা, তৃষ্ণা, ঘুম-জাগরণ চক্র, হরমোন নিঃসরণ ইত্যাদি নিয়ন্ত্রণ করে। অম্ল ও ক্ষারের সাম্যতা বৃক্ক দ্বারা নিয়ন্ত্রিত হয়, ঐচ্ছিক চলাফেরা সেরেব্রাম দ্বারা এবং দেহের ভারসাম্য সেরিবেলাম দ্বারা নিয়ন্ত্রিত হয়।</p>",
+        },
+        {
+          id: 14,
+          question:
+            "মস্তিষ্কের কোন অংশ দেহের সব ঐচ্ছিক পেশির কার্যকলাপ নিয়ন্ত্রণ করে?",
+          options: {
+            a: "সেরেব্রাম",
+            b: "হাইপোথ্যালামাস",
+            c: "সেরিবেলাম",
+            d: "থ্যালামাস",
+          },
+          correct: "a",
+          explanation:
+            "<p>মস্তিষ্কের <strong>সেরিব্রাম (Cerebrum)</strong> হলো সেই অংশ যা দেহের <strong>সব ঐচ্ছিক পেশির কার্যকলাপ নিয়ন্ত্রণ করে</strong>। সেরেব্রামের মোটর কর্টেক্স (Motor cortex) ঐচ্ছিক নড়াচড়ার পরিকল্পনা, সমন্বয় এবং সম্পাদনে গুরুত্বপূর্ণ ভূমিকা পালন করে। যদিও সেরিবেলাম ঐচ্ছিক নড়াচড়ার সমন্বয় সাধন করে, সরাসরি নিয়ন্ত্রণ সেরেব্রামের।</p>",
+        },
+        {
+          id: 15,
+          question: "নিচের কোনটি নিউরাল নালির প্রাচীরে দেখা যায়?",
+          options: {
+            a: "আবরণী কোষ",
+            b: "সিলীয় কোষ",
+            c: "স্নায়ু কোষ",
+            d: "পেশি কোষ",
+          },
+          correct: "b",
+          explanation:
+            "<p>নিউরাল নালি (Neural tube) হলো ভ্রূণীয় বিকাশের সময় গঠিত একটি কাঠামো যা থেকে মস্তিষ্ক এবং সুষুম্নাকাণ্ড তৈরি হয়। এর প্রাচীরে <strong>সিলীয় কোষ (Ciliated cells)</strong> দেখা যায়। এই সিলিয়াগুলো নিউরাল ফ্লুইড (Neural fluid) চলাচলে সাহায্য করে, যা মস্তিষ্কের বিকাশের জন্য গুরুত্বপূর্ণ।</p>",
+        },
+        {
+          id: 16,
+          question: "মানুষের মস্তিষ্ক ও স্পাইনাল কর্ড আবৃতকারী আবরণের নাম কী?",
+          options: {
+            a: "সারকোলেমা",
+            b: "পেরিটোনিয়াম",
+            c: "পেরিঅস্টিয়াম",
+            d: "মেনিনজেস",
+          },
+          correct: "d",
+          explanation:
+            "<p>মানুষের মস্তিষ্ক এবং সুষুম্নাকাণ্ড (Spinal cord) তিনটি সুরক্ষামূলক ঝিল্লি দ্বারা আবৃত থাকে, যাদের সম্মিলিতভাবে <strong>মেনিনজেস (Meninges)</strong> বলা হয়। এই তিনটি স্তর হলো ড্যুরা ম্যাটার, অ্যারাকনয়েড ম্যাটার এবং পায়া ম্যাটার। সারকোলেমা হলো পেশি কোষের আবরণ, পেরিটোনিয়াম হলো উদর গহ্বরের আবরণ এবং পেরিঅস্টিয়াম হলো অস্থির আবরণ।</p>",
+        },
+        {
+          id: 17,
+          question:
+            "Great ravelled knot বলতে স্নায়ুতন্ত্রের কোন অংশকে বুঝানো হয়?",
+          options: {
+            a: "স্পাইনাল কর্ড",
+            b: "মস্তিষ্ক",
+            c: "ক্রেনিয়াল নার্ভ",
+            d: "গ্যাংলিয়া",
+          },
+          correct: "b",
+          explanation:
+            "<p><strong>Great ravelled knot</strong> শব্দটি দিয়ে <strong>মস্তিষ্ককে (Brain)</strong> বোঝানো হয়। এটি মস্তিষ্কের জটিল এবং জট পাকানো গঠনকে নির্দেশ করে, যা অসংখ্য নিউরন এবং তাদের সংযোগ নিয়ে গঠিত এবং মানবদেহের সবচেয়ে জটিল অঙ্গ হিসেবে কাজ করে।</p>",
+        },
+        {
+          id: 18,
+          question: "প্রাপ্ত বয়স্ক পুরুষের মস্তিষ্কের আয়তন কত?",
+          options: {
+            a: "১৩০০ সিসি",
+            b: "১২০০ সিসি",
+            c: "১১০০ সিসি",
+            d: "১৫০০ সিসি",
+          },
+          correct: "d",
+          explanation:
+            "<p>প্রাপ্ত বয়স্ক পুরুষের মস্তিষ্কের গড় আয়তন প্রায় <strong>১৪০০-১৫০০ সিসি (ঘন সেন্টিমিটার)</strong>। অন্যদিকে, মহিলাদের মস্তিষ্কের গড় আয়তন কিছুটা কম, প্রায় ১২০০-১৩০০ সিসি। তাই প্রদত্ত বিকল্পগুলির মধ্যে <strong>১৫০০ সিসি</strong> হলো সবচেয়ে উপযুক্ত উত্তর।</p>",
+        },
+        {
+          id: 19,
+          question:
+            "মস্তিষ্কের কোন অংশ শ্বাস-প্রশ্বাস, স্পন্দনহার ইত্যাদি নিয়ন্ত্রণ করে?",
+          options: {
+            a: "সেরেব্রাম",
+            b: "পনস",
+            c: "মেডুলা",
+            d: "হাইপোথ্যালামাস",
+          },
+          correct: "c",
+          explanation:
+            "<p>মস্তিষ্কের <strong>মেডুলা অবলংগাটা (Medulla oblongata)</strong>, যা মস্তিষ্কের কান্ডের একটি অংশ, <strong>শ্বাস-প্রশ্বাস, হৃদস্পন্দন (স্পন্দনহার), রক্তচাপ</strong> এবং অন্যান্য গুরুত্বপূর্ণ অনৈচ্ছিক কার্যকারিতা নিয়ন্ত্রণ করে। এটি জীবনের জন্য অপরিহার্য মৌলিক জৈবিক প্রক্রিয়াগুলির কেন্দ্র।</p>",
+        },
+        {
+          id: 20,
+          question: "মানব মস্তিষ্কে কতটি ভেন্ট্রিকল আছে?",
+          options: {
+            a: "২",
+            b: "৩",
+            c: "৪",
+            d: "৫",
+          },
+          correct: "c",
+          explanation:
+            "<p>মানব মস্তিষ্কে মোট <strong>৪টি ভেন্ট্রিকল (Ventricles)</strong> আছে। এই ভেন্ট্রিকলগুলো হলো তরল-পূর্ণ গহ্বর যা সেরিব্রোস্পাইনাল ফ্লুইড (CSF) উৎপাদন এবং সঞ্চালনে সাহায্য করে। এই চারটি ভেন্ট্রিকল হলো: দুটি ল্যাটারাল ভেন্ট্রিকল (Lateral ventricles), একটি তৃতীয় ভেন্ট্রিকল (Third ventricle), এবং একটি চতুর্থ ভেন্ট্রিকল (Fourth ventricle)।</p>",
+        },
+        {
+          id: 21,
+          question: "কোনটি পশ্চাৎ মস্তিষ্কের অংশ?",
+          options: {
+            a: "সেরেব্রাম",
+            b: "সেরিবেলাম",
+            c: "হাইপোথ্যালামাস",
+            d: "থ্যালামাস",
+          },
+          correct: "b",
+          explanation:
+            "<p>মস্তিষ্ককে প্রধানত তিনটি অংশে ভাগ করা হয়: অগ্রমস্তিষ্ক (Forebrain), মধ্যমস্তিষ্ক (Midbrain) এবং পশ্চাৎ মস্তিষ্ক (Hindbrain)। <strong>সেরিবেলাম (Cerebellum)</strong> হলো <strong>পশ্চাৎ মস্তিষ্কের</strong> একটি প্রধান অংশ, যা পনস এবং মেডুলা অবলংগাটার সাথে মিলে মস্তিষ্কের কান্ড (Brainstem) গঠন করে। সেরেব্রাম, হাইপোথ্যালামাস এবং থ্যালামাস অগ্রমস্তিষ্কের অংশ।</p>",
+        },
+        {
+          id: 22,
+          question: "কর্পাস ক্যালোসাম যুক্ত থাকে?",
+          options: {
+            a: "দুটি গুরুমস্তিষ্কের গোলার্ধে",
+            b: "মেডুলা এবং লঘুমস্তিষ্কে",
+            c: "দুটি লঘুমস্তিষ্কের গোলার্ধে",
+            d: "পনস এবং লঘুমস্তিষ্কে",
+          },
+          correct: "a",
+          explanation:
+            "<p><strong>কর্পাস ক্যালোসাম (Corpus callosum)</strong> হলো মস্তিষ্কের একটি বিশাল স্নায়ু গুচ্ছ যা <strong>দুটি গুরুমস্তিষ্কের (সেরিব্রামের) গোলার্ধকে</strong> (Cerebral hemispheres) সংযুক্ত করে। এটি ডান এবং বাম সেরেব্রাল হেমিস্ফিয়ারের মধ্যে তথ্য আদান-প্রদানে সাহায্য করে, যা মস্তিষ্কের সমন্বিত কার্যকারিতার জন্য অপরিহার্য।</p>",
+        },
+        {
+          id: 23,
+          question: "মানুষের জৈব ঘড়ি নিয়ন্ত্রণ করে মস্তিষ্কের কোন অংশ?",
+          options: {
+            a: "সেরেব্রাম",
+            b: "সেরিবেলাম",
+            c: "থ্যালামাস",
+            d: "হাইপোথ্যালামাস",
+          },
+          correct: "d",
+          explanation:
+            "<p>মানুষের <strong>জৈব ঘড়ি (Circadian rhythm)</strong>, যা ঘুম-জাগরণ চক্র এবং অন্যান্য দৈনিক ছন্দ নিয়ন্ত্রণ করে, মূলত <strong>হাইপোথ্যালামাসের (Hypothalamus)</strong> মধ্যে অবস্থিত সুপ্রাকায়াসম্যাটিক নিউক্লিয়াস (Suprachiasmatic Nucleus - SCN) দ্বারা নিয়ন্ত্রিত হয়। এটি আলোর সংকেত গ্রহণ করে এবং দিনের সময় অনুযায়ী দেহের শারীরবৃত্তীয় প্রক্রিয়াগুলোকে সমন্বয় সাধন করে।</p>",
+        },
+        {
+          id: 24,
+          question:
+            "মস্তিষ্কের কোন অংশ পিটুইটারি গ্রন্থির ক্ষরণ নিয়ন্ত্রণ করে?",
+          options: {
+            a: "হাইপোথ্যালামাস",
+            b: "পিনিয়াল বডি",
+            c: "সেরেব্রাল হেমিস্ফিয়ার",
+            d: "কর্পাস ক্যালোসাম",
+          },
+          correct: "a",
+          explanation:
+            "<p>মস্তিষ্কের <strong>হাইপোথ্যালামাস (Hypothalamus)</strong> হলো সেই অংশ যা <strong>পিটুইটারি গ্রন্থির (Pituitary gland)</strong> ক্ষরণকে সরাসরি নিয়ন্ত্রণ করে। হাইপোথ্যালামাস বিভিন্ন রিলিজিং হরমোন (Releasing hormones) এবং ইনহিবিটিং হরমোন (Inhibiting hormones) তৈরি করে যা পিটুইটারি গ্রন্থিকে উদ্দীপিত বা বাধা দেয়, যার ফলে দেহের অন্যান্য গ্রন্থি থেকে হরমোন নিঃসরণ নিয়ন্ত্রিত হয়। এই সংযোগটি এন্ডোক্রাইন সিস্টেমের একটি গুরুত্বপূর্ণ অংশ।</p>",
+        },
+        {
+          id: 25,
+          question: "হাইপোথ্যালামাসের কাজ কোনটি?",
+          options: {
+            a: "ভারসাম্য নিয়ন্ত্রণ",
+            b: "লালা ক্ষরণ নিয়ন্ত্রণ",
+            c: "হৃৎস্পন্দন নিয়ন্ত্রণ",
+            d: "দেহতাপ নিয়ন্ত্রণ",
+          },
+          correct: "d",
+          explanation:
+            "<p>হাইপোথ্যালামাসের (Hypothalamus) অনেক গুরুত্বপূর্ণ কাজ রয়েছে, যার মধ্যে অন্যতম হলো <strong>দেহতাপ নিয়ন্ত্রণ করা</strong>। এটি দেহের অভ্যন্তরীণ পরিবেশের তাপমাত্রা একটি নির্দিষ্ট সীমার মধ্যে রাখতে সাহায্য করে। ভারসাম্য নিয়ন্ত্রণ সেরিবেলামের কাজ, লালা ক্ষরণ মেডুলা অবলংগাটার কাজ, এবং হৃৎস্পন্দন নিয়ন্ত্রণও মেডুলা অবলংগাটার কাজ।</p>",
+        },
+        {
+          id: 26,
+          question: "মস্তিষ্কের অভ্যন্তরে প্রকোষ্ঠের সংখ্যা?",
+          options: {
+            a: "৩",
+            b: "৪",
+            c: "৫",
+            d: "৬",
+          },
+          correct: "b",
+          explanation:
+            "<p>মস্তিষ্কের অভ্যন্তরে তরল-পূর্ণ গহ্বরগুলোকে ভেন্ট্রিকল (Ventricles) বলা হয়। মানুষের মস্তিষ্কে মোট <strong>৪টি প্রকোষ্ঠ বা ভেন্ট্রিকল</strong> রয়েছে। এগুলো হলো: দুটি ল্যাটারাল ভেন্ট্রিকল (Lateral ventricles), একটি তৃতীয় ভেন্ট্রিকল (Third ventricle), এবং একটি চতুর্থ ভেন্ট্রিকল (Fourth ventricle)।</p>",
+        },
+        {
+          id: 27,
+          question: "মেনিনজেস নামক পর্দা দ্বারা কী আবৃত থাকে?",
+          options: {
+            a: "ফুসফুস",
+            b: "হৃৎপিণ্ড",
+            c: "মস্তিষ্ক",
+            d: "বৃক্ক",
+          },
+          correct: "c",
+          explanation:
+            "<p><strong>মেনিনজেস (Meninges)</strong> হলো তিনটি সুরক্ষামূলক ঝিল্লির একটি সেট যা <strong>মস্তিষ্ক</strong> এবং সুষুম্নাকাণ্ডকে আবৃত করে রাখে। এই পর্দাগুলো মস্তিষ্ককে আঘাত থেকে রক্ষা করে এবং মস্তিষ্কের জন্য একটি স্থিতিশীল পরিবেশ প্রদান করে। ফুসফুস প্লিউরা দ্বারা, হৃৎপিণ্ড পেরিকার্ডিয়াম দ্বারা এবং বৃক্ক একটি ক্যাপসুল দ্বারা আবৃত থাকে।</p>",
+        },
+      ];
+
+      const totalQuestions = questions.length;
+      let timeLeft = Math.floor(totalQuestions / 2) * 60;
+      const timerElement = document.getElementById("timer");
+      let timerInterval;
+
+      function updateTimer() {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        timerElement.innerText = `${toBengaliNumber(
+          minutes
+        )} মিনিট ${toBengaliNumber(seconds)} সেকেন্ড`;
+
+        if (timeLeft > 0) {
+          timeLeft--;
+        } else {
+          stopTimer();
+          confirmSubmit();
+        }
+      }
+
+      function startTimer() {
+        console.log("Starting timer");
+        timerElement.innerText = `${toBengaliNumber(
+          Math.floor(timeLeft / 60)
+        )} মিনিট ${toBengaliNumber(timeLeft % 60)} সেকেন্ড`;
+        timerInterval = setInterval(updateTimer, 1000);
+      }
+
+      function stopTimer() {
+        clearInterval(timerInterval);
+        console.log("Timer stopped");
+      }
+
+      function toBengaliNumber(num) {
+        const bengaliDigits = [
+          "০",
+          "১",
+          "২",
+          "৩",
+          "৪",
+          "৫",
+          "৬",
+          "৭",
+          "৮",
+          "৯",
+        ];
+        let numStr = num.toString();
+
+        let isNegative = num < 0;
+        if (isNegative) {
+          numStr = numStr.substring(1);
+        }
+
+        if (numStr.includes(".")) {
+          let [integerPart, decimalPart] = numStr.split(".");
+          let integerBengali = integerPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          let decimalBengali = decimalPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (
+            (isNegative ? "−" : "") + integerBengali + "." + decimalBengali
+          );
+        } else {
+          let integerBengali = numStr
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (isNegative ? "−" : "") + integerBengali;
+        }
+      }
+
+      function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+      }
+
+      function generateQuestions() {
+        console.log("Generating questions");
+        const examContainer = document.querySelector("#exam");
+        if (!examContainer) {
+          console.error("Exam container (#exam) not found!");
+          return;
+        }
+        examContainer.innerHTML = "";
+        console.log("Questions array:", questions);
+        const shuffledQuestions = shuffleArray([...questions]);
+        shuffledQuestions.forEach((question, index) => {
+          console.log(`Generating question ${index + 1}:`, question);
+          const questionDiv = document.createElement("div");
+          questionDiv.classList.add("question-container");
+          questionDiv.setAttribute("data-question", question.id);
+          questionDiv.setAttribute("data-correct", question.correct);
+
+          let optionsHTML = "";
+          for (let option in question.options) {
+            optionsHTML += `
+                            <label class="option" data-option="${option}">
+                              <div class="circle">${option}</div>
+                              <span class="option-text">${question.options[option]}</span>
+                            </label>
+                          `;
+          }
+
+          const explanationHTML = question.explanation
+            ? `<div class="explanation-dropdown">
+                               <button class="explanation-btn">ব্যাখ্যা দেখো</button>
+                               <div class="explanation-content">
+                                 <div class="explanation-label">ব্যাখ্যা:</div>
+                                 ${question.explanation}
+                               </div>
+                             </div>`
+            : "";
+
+          questionDiv.innerHTML = `
+                          <p class="question-label">${index + 1}. ${
+            question.question
+          }</p>
+                          <div class="options">
+                            ${optionsHTML}
+                          </div>
+                          ${explanationHTML}
+                        `;
+          examContainer.appendChild(questionDiv);
+          console.log(`Appended question ${index + 1} to exam container`);
+        });
+
+        const questionContainers = document.querySelectorAll(
+          ".question-container"
+        );
+        console.log(`Found ${questionContainers.length} question containers`);
+        questionContainers.forEach((container, idx) => {
+          console.log(`Setting question ${idx + 1} to visible`);
+          container.style.display = "block";
+        });
+
+        document.querySelectorAll(".option").forEach((option) => {
+          option.addEventListener(
+            "click",
+            function (e) {
+              e.preventDefault();
+              const parent = this.closest(".question-container");
+              if (parent.classList.contains("locked")) return;
+              parent.classList.add("locked");
+              parent.querySelectorAll(".option").forEach((el) => {
+                if (el !== this) {
+                  el.style.pointerEvents = "none";
+                  el.style.cursor = "default";
+                }
+                el.classList.remove("selected");
+              });
+              this.classList.add("selected");
+              console.log(
+                `Option selected for question ${parent.getAttribute(
+                  "data-question"
+                )}: ${this.getAttribute("data-option")}`
+              );
+            },
+            { once: true }
+          );
+        });
+
+        document.querySelectorAll(".explanation-btn").forEach((btn) => {
+          btn.addEventListener("click", function () {
+            const content = this.nextElementSibling;
+            content.classList.toggle("visible");
+            this.classList.toggle("active");
+            console.log("Toggled explanation visibility");
+          });
+        });
+
+        const examInfo = document.getElementById("exam-info");
+        if (examInfo) {
+          examInfo.innerText = `পূর্ণ নম্বরঃ ${toBengaliNumber(
+            totalQuestions
+          )}`;
+          console.log("Exam info updated");
+        } else {
+          console.error("Exam info element not found!");
+        }
+      }
+
+      function initializeChart() {
+        console.log("Initializing chart");
+        const ctx = document.getElementById("scoreChart").getContext("2d");
+        chartInstance = new Chart(ctx, {
+          type: "pie",
+          data: {
+            labels: ["ঠিক উত্তর", "ভুল উত্তর", "অনুত্তরিত"],
+            datasets: [
+              {
+                data: [0, 0, 0],
+                backgroundColor: ["#34c759", "#ff3b30", "#007aff"],
+                borderColor: "#fff",
+                borderWidth: 2,
+                hoverOffset: 10,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: "10%",
+            layout: {
+              padding: 10,
+            },
+            plugins: {
+              legend: {
+                position: "bottom",
+                labels: {
+                  font: {
+                    family: '"Hind Siliguri", sans-serif',
+                    size: 13,
+                    weight: "bold",
+                  },
+                  color: "#333",
+                  padding: 12,
+                  boxWidth: 14,
+                  generateLabels: (chart) => {
+                    const data = chart.data;
+                    return data.labels.map((label, i) => ({
+                      text: label,
+                      font: {
+                        family: '"Hind Siliguri", sans-serif',
+                      },
+                      fillStyle: data.datasets[0].backgroundColor[i],
+                      hidden: !chart.getDataVisibility(i),
+                      index: i,
+                    }));
+                  },
+                },
+              },
+              tooltip: {
+                backgroundColor: "rgba(0, 0, 0, 0.9)",
+                cornerRadius: 6,
+                titleFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 14,
+                  weight: "bold",
+                },
+                bodyFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 13,
+                },
+                padding: 10,
+                boxPadding: 5,
+              },
+            },
+            animation: {
+              animateScale: true,
+              animateRotate: true,
+              duration: 1000,
+              easing: "easeOutQuart",
+            },
+            elements: {
+              arc: {
+                borderRadius: 8,
+              },
+            },
+            onClick: (e, elements) => {
+              if (elements.length > 0) {
+                const index = elements[0].index;
+                const filter = ["correct", "wrong", "unanswered"][index];
+                filterQuestions(filter);
+              } else {
+                filterQuestions("all");
+              }
+            },
+          },
+        });
+        console.log("Chart initialized");
+      }
+
+      function filterQuestions(type) {
+        console.log(`Filtering questions by type: ${type}`);
+        document.querySelectorAll(".question-container").forEach((question) => {
+          const status = question.getAttribute("data-status");
+          if (type === "all" || status === type) {
+            question.style.display = "block";
+          } else {
+            question.style.display = "none";
+          }
+        });
+      }
+
+      function showConfirmPopup() {
+        console.log("Showing confirm popup");
+        document.getElementById("confirmPopup").style.display = "block";
+      }
+
+      function autoSubmitScore() {
+        console.log("Auto-submitting score");
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document.querySelectorAll(".question-container").forEach((question) => {
+          let correctAnswer = question.getAttribute("data-correct");
+          let selectedOption = question.querySelector(".option.selected");
+
+          if (selectedOption) {
+            answered++;
+            let chosenAnswer = selectedOption.getAttribute("data-option");
+            if (chosenAnswer === correctAnswer) {
+              score += 1;
+              correct++;
+              question.setAttribute("data-status", "correct");
+            } else {
+              score -= 0.25;
+              wrong++;
+              question.setAttribute("data-status", "wrong");
+            }
+          } else {
+            unanswered++;
+            question.setAttribute("data-status", "unanswered");
+          }
+        });
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        const formData = new FormData();
+        formData.append("userID", userID);
+        formData.append("finalScore", score.toFixed(2));
+        formData.append("correctAnswers", correct);
+        formData.append("wrongAnswers", wrong);
+        formData.append("unanswered", unanswered);
+
+        const url = "https://formspree.io/f/xpwy";
+        navigator.sendBeacon(url, formData);
+        console.log("Auto-submission sent via sendBeacon for userID:", userID);
+      }
+
+      function confirmSubmit() {
+        console.log("Confirming submission");
+        document.getElementById("confirmPopup").style.display = "none";
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document
+          .querySelectorAll(".question-container")
+          .forEach((question, index) => {
+            let correctAnswer = question.getAttribute("data-correct");
+            let selectedOption = question.querySelector(".option.selected");
+
+            if (selectedOption) {
+              answered++;
+              let chosenAnswer = selectedOption.getAttribute("data-option");
+              if (chosenAnswer === correctAnswer) {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("correct-text");
+                score += 1;
+                correct++;
+                question.setAttribute("data-status", "correct");
+              } else {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("incorrect-text");
+                question
+                  .querySelector(
+                    `[data-option="${correctAnswer}"] .option-text`
+                  )
+                  .classList.add("correct-text");
+                score -= 0.25;
+                wrong++;
+                question.setAttribute("data-status", "wrong");
+              }
+            } else {
+              question
+                .querySelector(`[data-option="${correctAnswer}"] .option-text`)
+                .classList.add("unattempted-text");
+              unanswered++;
+              question.setAttribute("data-status", "unanswered");
+            }
+            question.style.display = "block";
+
+            const explanationDropdown = question.querySelector(
+              ".explanation-dropdown"
+            );
+            if (explanationDropdown) {
+              explanationDropdown.classList.add("visible");
+            }
+          });
+
+        const chartContainer = document.querySelector(".chart-container");
+        chartContainer.classList.add("visible");
+        if (!chartInstance) {
+          initializeChart();
+        }
+        chartInstance.data.datasets[0].data = [correct, wrong, unanswered];
+        chartInstance.update();
+        console.log("Chart updated with data:", [correct, wrong, unanswered]);
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        document.getElementById("totalQuestions").innerText =
+          toBengaliNumber(total);
+        document.getElementById("answered").innerText =
+          toBengaliNumber(answered);
+        document.getElementById("correctAnswers").innerText =
+          toBengaliNumber(correct);
+        document.getElementById("wrongAnswers").innerText =
+          toBengaliNumber(wrong);
+        document.getElementById("unanswered").innerText =
+          toBengaliNumber(unanswered);
+        document.getElementById("finalScore").innerText = toBengaliNumber(
+          score.toFixed(2)
+        );
+
+        document.getElementById("formUserID").value = userID;
+        document.getElementById("formFinalScore").value = score.toFixed(2);
+        document.getElementById("formCorrectAnswers").value = correct;
+        document.getElementById("formWrongAnswers").value = wrong;
+        document.getElementById("formUnanswered").value = unanswered;
+
+        document.getElementById("submitBtn").style.display = "none";
+
+        document.getElementById("scorePopup").style.display = "block";
+
+        const form = document.getElementById("scoreForm");
+        fetch(form.action, {
+          method: "POST",
+          body: new FormData(form),
+          headers: {
+            Accept: "application/json",
+          },
+        })
+          .then((response) => {
+            if (response.ok) {
+              console.log("Form submitted successfully");
+              form.reset();
+            } else {
+              console.error("Form submission failed:", response.statusText);
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      }
+
+      function cancelSubmit() {
+        console.log("Canceling submission");
+        document.getElementById("confirmPopup").style.display = "none";
+      }
+
+      document
+        .getElementById("submitBtn")
+        .addEventListener("click", function () {
+          console.log("Submit button clicked");
+          showConfirmPopup();
+        });
+
+      function closePopup() {
+        console.log("Closing score popup");
+        const scorePopup = document.getElementById("scorePopup");
+        scorePopup.classList.add("slide-out");
+        setTimeout(() => {
+          scorePopup.style.display = "none";
+          scorePopup.classList.remove("slide-out");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }, 500);
+      }
+
+      document
+        .getElementById("scoreForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          console.log("Score form submitted");
+          closePopup();
+        });
+    </script>
+  </body>
+</html>
